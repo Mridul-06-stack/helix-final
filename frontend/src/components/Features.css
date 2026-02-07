@@ -1,0 +1,189 @@
+/* Enhanced Features section styles */
+.magic-bento-effect {
+    --glow-x: 50%;
+    --glow-y: 50%;
+    --glow-intensity: 0;
+    --glow-radius: 300px;
+    --glow-color: 132, 0, 255;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.magic-bento-effect::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg,
+            rgba(var(--glow-color), 0.1) 0%,
+            transparent 50%,
+            rgba(var(--glow-color), 0.05) 100%);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 0;
+}
+
+.magic-bento-effect:hover::before {
+    opacity: 1;
+}
+
+.magic-bento-effect::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    background: radial-gradient(var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+            rgba(var(--glow-color), calc(var(--glow-intensity) * 0.8)) 0%,
+            rgba(var(--glow-color), calc(var(--glow-intensity) * 0.4)) 30%,
+            transparent 60%);
+    border-radius: inherit;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.magic-bento-effect:hover::after {
+    opacity: 1;
+}
+
+.magic-bento-effect:hover {
+    box-shadow:
+        0 8px 32px rgba(46, 24, 78, 0.5),
+        0 0 40px rgba(var(--glow-color), 0.3);
+    transform: translateY(-4px);
+}
+
+/* Step number styling */
+.step-number {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.step-number::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, currentColor, transparent);
+    opacity: 0.2;
+    z-index: -1;
+}
+
+.magic-bento-effect:hover .step-number {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Step content styling */
+.step-content {
+    flex: 1;
+    transition: transform 0.3s ease;
+}
+
+.magic-bento-effect:hover .step-content {
+    transform: translateX(4px);
+}
+
+/* Header icon animation */
+.header-icon {
+    font-size: 56px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    transition: all 0.3s ease;
+}
+
+.magic-bento-effect:hover .header-icon {
+    transform: scale(1.1) rotate(-5deg);
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
+}
+
+/* Particle styles */
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.particle::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: rgba(132, 0, 255, 0.2);
+    border-radius: 50%;
+    z-index: -1;
+}
+
+/* Security badge styling */
+.security-badge {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+
+.security-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.magic-bento-effect:hover .security-badge::before {
+    opacity: 1;
+}
+
+.magic-bento-effect:hover .security-badge {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Divider line between steps */
+.step-divider {
+    height: 1px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%);
+    margin: 16px 0;
+    opacity: 0.5;
+}
+
+/* Card header gradient */
+.card-header-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(180deg,
+            rgba(var(--glow-color), 0.08) 0%,
+            transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+}
