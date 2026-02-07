@@ -10,11 +10,16 @@ import uuid
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
-from ...agent.genomic_agent import GenomicAgent, GenomicQuery, QueryStatus
-from ...agent.snp_analyzer import SNPAnalyzer
-from ...agent.zk_responder import ZKResponder, ZKProof
-from ...encryption.wallet_crypto import WalletCrypto
-from ...encryption.ipfs_client import MockIPFSClient
+# Use absolute imports
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from agent.genomic_agent import GenomicAgent, GenomicQuery, QueryStatus
+from agent.snp_analyzer import SNPAnalyzer
+from agent.zk_responder import ZKResponder, ZKProof
+from encryption.wallet_crypto import WalletCrypto
+from encryption.ipfs_client import MockIPFSClient
 
 logger = logging.getLogger(__name__)
 

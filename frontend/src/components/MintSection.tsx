@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '@/config/contracts';
+import { CONTRACTS } from '@/contracts';
+import { ethers } from 'ethers';
 
 interface MintSectionProps {
     wallet: string | null;
@@ -47,24 +50,307 @@ export default function MintSection({ wallet, onConnect }: MintSectionProps) {
 
         setIsProcessing(true);
 
-        // Simulate encryption process
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Get the correct Ethereum provider
+            const provider = (window as any).ethereum;
 
-        setResult({
-            ipfsCid: 'QmDemo' + Math.random().toString(36).substr(2, 9),
-            dataHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-            fileSize: file.size,
-        });
+            if (!provider) {
+                alert('Please install MetaMask or another Web3 wallet');
+                setIsProcessing(false);
+                return;
+            }
 
-        setStep(3);
-        setIsProcessing(false);
+            // Ensure wallet is connected and we have permission
+            console.log('Requesting account access...');
+            const accounts = await provider.request({
+                method: 'eth_requestAccounts',
+            });
+
+            if (!accounts || accounts.length === 0) {
+                alert('Please connect your wallet first');
+                setIsProcessing(false);
+                return;
+            }
+
+            const activeWallet = accounts[0];
+            console.log('Using wallet:', activeWallet);
+
+            // Get signing message from API
+            console.log('Fetching signing message from:', `${API_BASE_URL}/mint/signing-message/${activeWallet}`);
+            const messageResponse = await fetch(`${API_BASE_URL}/mint/signing-message/${activeWallet}`);
+            if (!messageResponse.ok) {
+                throw new Error(`Failed to get signing message: ${messageResponse.status}`);
+            }
+            const { message } = await messageResponse.json();
+            console.log('Got signing message:', message);
+
+            // Request signature from wallet
+            console.log('Requesting signature from wallet...');
+            const signature = await provider.request({
+                method: 'personal_sign',
+                params: [message, activeWallet],
+            });
+            console.log('Got signature:', signature);
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('wallet_address', activeWallet);
+            formData.append('signature', signature);
+            formData.append('gene_type', '23andme');
+
+            // Upload and encrypt
+            const response = await fetch(`${API_BASE_URL}/mint/encrypt`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                setResult({
+                    ipfsCid: data.ipfs_cid,
+                    dataHash: data.data_hash,
+                    fileSize: data.file_size,
+                });
+                setStep(3);
+            } else {
+                alert('Encryption failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Encryption error:', error);
+            alert('Failed to encrypt data: ' + (error as Error).message);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleMint = async () => {
+        if (!result || !wallet) return;
+
         setIsProcessing(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setStep(4);
-        setIsProcessing(false);
+
+        try {
+            console.log('🚀 Starting mint process...');
+            console.log('Wallet:', wallet);
+            console.log('Result data:', result);
+
+            // Check if MetaMask is installed
+            if (!(window as any).ethereum) {
+                throw new Error('MetaMask is not installed! Please install MetaMask to continue.');
+            }
+
+            const provider = new ethers.BrowserProvider((window as any).ethereum);
+            console.log('✅ Provider created');
+
+            // Check network
+            const network = await provider.getNetwork();
+            console.log('Current network:', {
+                name: network.name,
+                chainId: network.chainId.toString(),
+            });
+
+            const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 in hex
+
+            if (network.chainId !== BigInt(11155111)) {
+                console.error('❌ Wrong network detected!');
+                console.error('   Current:', network.chainId.toString());
+                console.error('   Required: 11155111 (Sepolia)');
+
+                // Try to automatically switch network
+                try {
+                    console.log('🔄 Attempting to switch to Sepolia...');
+                    await (window as any).ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: SEPOLIA_CHAIN_ID }],
+                    });
+
+                    // Wait a bit for network to switch
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Verify switch was successful
+                    const newNetwork = await provider.getNetwork();
+                    if (newNetwork.chainId !== BigInt(11155111)) {
+                        throw new Error('Network switch failed');
+                    }
+
+                    console.log('✅ Successfully switched to Sepolia!');
+                } catch (switchError: any) {
+                    console.error('Failed to switch network:', switchError);
+
+                    // If network doesn't exist, try to add it
+                    if (switchError.code === 4902) {
+                        try {
+                            console.log('📡 Adding Sepolia network to MetaMask...');
+                            await (window as any).ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: SEPOLIA_CHAIN_ID,
+                                    chainName: 'Sepolia Testnet',
+                                    nativeCurrency: {
+                                        name: 'Sepolia ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://ethereum-sepolia.publicnode.com'],
+                                    blockExplorerUrls: ['https://sepolia.etherscan.io']
+                                }]
+                            });
+                            console.log('✅ Sepolia network added!');
+                        } catch (addError) {
+                            console.error('Failed to add network:', addError);
+                            alert('❌ Wrong Network!\n\nYou are on Chain ID: ' + network.chainId + '\nRequired: Sepolia (Chain ID: 11155111)\n\nPlease manually switch to Sepolia testnet in MetaMask.\n\n1. Open MetaMask\n2. Click network dropdown\n3. Select "Sepolia" or add it manually');
+                            setIsProcessing(false);
+                            return;
+                        }
+                    } else {
+                        alert('❌ Wrong Network!\n\nYou are on Chain ID: ' + network.chainId + '\nRequired: Sepolia (Chain ID: 11155111)\n\nPlease switch to Sepolia testnet in MetaMask.');
+                        setIsProcessing(false);
+                        return;
+                    }
+                }
+            }
+            console.log('✅ Connected to Sepolia testnet');
+
+            const signer = await provider.getSigner();
+            const signerAddress = await signer.getAddress();
+            console.log('✅ Signer address:', signerAddress);
+
+            // Verify wallet matches
+            if (signerAddress.toLowerCase() !== wallet.toLowerCase()) {
+                throw new Error(`Wallet mismatch! Expected ${wallet} but got ${signerAddress}`);
+            }
+
+            // Create contract instance
+            console.log('Creating contract instance at:', CONTRACTS.GeneticNFT.address);
+            const contract = new ethers.Contract(
+                CONTRACTS.GeneticNFT.address,
+                CONTRACTS.GeneticNFT.abi,
+                signer
+            );
+            console.log('✅ Contract instance created');
+
+            // Verify contract is deployed
+            const code = await provider.getCode(CONTRACTS.GeneticNFT.address);
+            if (code === '0x') {
+                throw new Error('❌ Contract not deployed at ' + CONTRACTS.GeneticNFT.address);
+            }
+            console.log('✅ Contract verified on chain (bytecode length:', code.length, ')');
+
+            // Prepare contract parameters
+            const ipfsCID = result.ipfsCid;
+            const dataHash = result.dataHash.startsWith('0x') ? result.dataHash : '0x' + result.dataHash;
+            const encryptionAlgo = "AES-256-GCM";
+            const geneType = "23andme";
+            const fileSize = result.fileSize;
+            const tokenURI = ""; // Token URI (optional)
+
+            console.log('Contract parameters:', {
+                ipfsCID,
+                dataHash,
+                encryptionAlgo,
+                geneType,
+                fileSize,
+            });
+
+            // Get mint fee from contract
+            console.log('📞 Calling contract.mintFee()...');
+            try {
+                const mintFee = await contract.mintFee();
+                console.log('✅ Mint fee retrieved:', ethers.formatEther(mintFee), 'ETH');
+                console.log('   Mint fee (wei):', mintFee.toString());
+            } catch (feeError: any) {
+                console.error('❌ Error calling mintFee():', feeError);
+                console.error('   Error code:', feeError.code);
+                console.error('   Error message:', feeError.message);
+                console.error('   Error data:', feeError.data);
+                throw new Error(`Failed to read mint fee from contract: ${feeError.message}`);
+            }
+
+            const mintFee = await contract.mintFee();
+
+            // Call mintGenome function
+            console.log('📤 Sending mint transaction...');
+            console.log('Parameters:', {
+                ipfsCID,
+                dataHash,
+                encryptionAlgo,
+                geneType,
+                fileSize,
+                mintFee: ethers.formatEther(mintFee) + ' ETH'
+            });
+
+            const tx = await contract.mintGenome(
+                ipfsCID,
+                dataHash,
+                encryptionAlgo,
+                geneType,
+                fileSize,
+                tokenURI,
+                { value: mintFee }
+            );
+
+            console.log('✅ Transaction sent!');
+            console.log('   Hash:', tx.hash);
+            console.log('   From:', tx.from);
+            console.log('   To:', tx.to);
+            console.log('   View on Etherscan:', `https://sepolia.etherscan.io/tx/${tx.hash}`);
+            console.log('⏳ Waiting for confirmation (this may take 10-30 seconds)...');
+
+            // Wait for transaction confirmation
+            const receipt = await tx.wait();
+            console.log('Transaction confirmed:', receipt);
+
+            // Parse all events to find GenomeMinted
+            let tokenId = 'Unknown';
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = contract.interface.parseLog({
+                        topics: [...log.topics],
+                        data: log.data
+                    });
+
+                    if (parsed && parsed.name === 'GenomeMinted') {
+                        tokenId = parsed.args.tokenId.toString();
+                        console.log('✅ Found Token ID:', tokenId);
+                        console.log('Full event:', parsed.args);
+                        break;
+                    }
+                } catch (e) {
+                    // Skip logs that don't match our contract
+                    continue;
+                }
+            }
+
+            // If we couldn't find it in events, query the contract
+            if (tokenId === 'Unknown') {
+                try {
+                    const balance = await contract.balanceOf(wallet);
+                    const lastTokenId = await contract.tokenOfOwnerByIndex(wallet, balance - BigInt(1));
+                    tokenId = lastTokenId.toString();
+                    console.log('✅ Got Token ID from contract:', tokenId);
+                } catch (e) {
+                    console.error('Could not get token ID:', e);
+                }
+            }
+
+            setResult({
+                ...result,
+                tokenId,
+                txHash: tx.hash,
+            });
+
+            setStep(4);
+        } catch (error: any) {
+            console.error('Minting error:', error);
+            alert('Failed to mint NFT: ' + (error.message || error.toString()));
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (!wallet) {
@@ -257,14 +543,14 @@ export default function MintSection({ wallet, onConnect }: MintSectionProps) {
                                     Minting...
                                 </span>
                             ) : (
-                                '🧬 Mint NFT (0.001 MATIC)'
+                                '🧬 Mint NFT (0.001 ETH)'
                             )}
                         </motion.button>
                     </motion.div>
                 )}
 
                 {/* Step 4: Success */}
-                {step === 4 && (
+                {step === 4 && result && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -273,18 +559,73 @@ export default function MintSection({ wallet, onConnect }: MintSectionProps) {
                         <div className="text-6xl mb-6">🎉</div>
                         <h2 className="text-3xl font-bold mb-4 gradient-text">Success!</h2>
                         <p className="text-gray-400 mb-8">
-                            Your genome has been minted as an NFT. You now have cryptographic
+                            Your genome has been minted as an NFT on Sepolia testnet. You now have cryptographic
                             ownership of your genetic data!
                         </p>
 
-                        <div className="glass rounded-xl p-6 mb-8">
-                            <p className="text-sm text-gray-400 mb-2">Your Token ID</p>
-                            <p className="text-3xl font-bold gradient-text">#1</p>
+                        <div className="space-y-4 mb-8">
+                            <div className="glass rounded-xl p-6">
+                                <p className="text-sm text-gray-400 mb-2">Your Token ID</p>
+                                <p className="text-3xl font-bold gradient-text">#{result.tokenId || 'Processing...'}</p>
+                            </div>
+
+                            {result.txHash && (
+                                <div className="glass rounded-xl p-4">
+                                    <p className="text-sm text-gray-400 mb-2">Transaction Hash</p>
+                                    <a
+                                        href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-mono text-sm text-purple-400 hover:text-purple-300 break-all"
+                                    >
+                                        {result.txHash}
+                                    </a>
+                                </div>
+                            )}
+
+                            <div className="glass rounded-xl p-4">
+                                <p className="text-sm text-gray-400 mb-2">IPFS CID</p>
+                                <a
+                                    href={`https://gateway.pinata.cloud/ipfs/${result.ipfsCid}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-sm text-purple-400 hover:text-purple-300 break-all"
+                                >
+                                    {result.ipfsCid}
+                                </a>
+                            </div>
+
+                            <div className="glass rounded-xl p-4">
+                                <p className="text-sm text-gray-400 mb-2">Contract Address</p>
+                                <a
+                                    href={`https://sepolia.etherscan.io/address/${CONTRACTS.GeneticNFT.address}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-sm text-purple-400 hover:text-purple-300 break-all"
+                                >
+                                    {CONTRACTS.GeneticNFT.address}
+                                </a>
+                            </div>
                         </div>
 
-                        <p className="text-sm text-gray-500">
-                            You can now query your genome and earn rewards from research bounties!
-                        </p>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-500">
+                                You can now query your genome and earn rewards from research bounties!
+                            </p>
+
+                            <motion.button
+                                onClick={() => {
+                                    setFile(null);
+                                    setStep(1);
+                                    setResult(null);
+                                }}
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-colors"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                Mint Another NFT
+                            </motion.button>
+                        </div>
                     </motion.div>
                 )}
             </div>

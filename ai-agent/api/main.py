@@ -29,23 +29,37 @@ class Settings(BaseSettings):
     app_name: str = "HelixVault"
     version: str = "1.0.0"
     debug: bool = False
-    
+
     # API Keys
     openai_api_key: Optional[str] = None
     pinata_api_key: Optional[str] = None
     pinata_api_secret: Optional[str] = None
-    
+
     # Blockchain
     polygon_rpc_url: str = "https://polygon-rpc.com"
+    mumbai_rpc_url: Optional[str] = None
+    sepolia_rpc_url: Optional[str] = None
     contract_address: Optional[str] = None
     bounty_contract_address: Optional[str] = None
-    
+    private_key: Optional[str] = None
+    etherscan_api_key: Optional[str] = None
+
+    # IPFS
+    ipfs_gateway: Optional[str] = None
+
     # Agent
     agent_wallet_address: Optional[str] = None
-    
+
+    # API Configuration
+    host: str = "0.0.0.0"
+    port: int = 8000
+    cors_origins: str = "http://localhost:3000"
+
     class Config:
-        env_file = ".env"
+        env_file = "../.env"  # Look in parent directory
         env_prefix = "HELIX_"
+        case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env file
 
 
 settings = Settings()

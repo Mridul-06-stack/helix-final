@@ -8,12 +8,23 @@ import tempfile
 import os
 from typing import Optional
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from parent directory
+from pathlib import Path
+env_path = Path(__file__).parent.parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from pydantic import BaseModel, Field
 
-from ...encryption.wallet_crypto import WalletCrypto
-from ...encryption.ipfs_client import IPFSClient, MockIPFSClient
+# Use absolute imports to avoid relative import issues
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from encryption.wallet_crypto import WalletCrypto
+from encryption.ipfs_client import IPFSClient, MockIPFSClient
 
 logger = logging.getLogger(__name__)
 
@@ -122,11 +133,29 @@ async def encrypt_and_upload(
         encrypted_bytes = encrypted_payload.to_bytes()
         
         logger.info(f"Encrypted to {len(encrypted_bytes)} bytes")
-        
-        # Upload to IPFS (use mock for development)
-        # In production, use real Pinata credentials
-        ipfs = MockIPFSClient()
-        
+
+        # Upload to IPFS with Pinata
+        # Try multiple environment variable names
+        pinata_key = (
+            os.getenv("HELIX_PINATA_API_KEY") or
+            os.getenv("PINATA_API_KEY") or
+            os.getenv("helix_pinata_api_key")
+        )
+        pinata_secret = (
+            os.getenv("HELIX_PINATA_API_SECRET") or
+            os.getenv("PINATA_SECRET_API_KEY") or
+            os.getenv("helix_pinata_api_secret")
+        )
+
+        logger.info(f"Pinata key found: {bool(pinata_key)}, secret found: {bool(pinata_secret)}")
+
+        if pinata_key and pinata_secret:
+            ipfs = IPFSClient(pinata_key, pinata_secret)
+            logger.info("Using real Pinata IPFS client")
+        else:
+            ipfs = MockIPFSClient()
+            logger.warning(f"Pinata credentials not found, using mock IPFS client (key={pinata_key[:10] if pinata_key else None})")
+
         metadata = {
             "gene_type": gene_type,
             "encryption_algo": "AES-256-GCM",

@@ -10,8 +10,13 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ...agent.snp_analyzer import SNPAnalyzer
-from ...agent.zk_responder import ZKResponder
+# Use absolute imports
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from agent.snp_analyzer import SNPAnalyzer
+from agent.zk_responder import ZKResponder
 
 logger = logging.getLogger(__name__)
 

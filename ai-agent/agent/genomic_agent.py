@@ -13,12 +13,17 @@ from datetime import datetime
 from enum import Enum
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from .snp_analyzer import SNPAnalyzer, SNPResult, TraitPrediction
-from ..encryption.wallet_crypto import WalletCrypto
-from ..encryption.ipfs_client import IPFSClient
+# Use absolute imports
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from agent.snp_analyzer import SNPAnalyzer, SNPResult, TraitPrediction
+from encryption.wallet_crypto import WalletCrypto
+from encryption.ipfs_client import IPFSClient
 
 logger = logging.getLogger(__name__)
 
