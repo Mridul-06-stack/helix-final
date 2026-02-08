@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
+import { API_BASE_URL } from '@/config/contracts';
 
 interface QuerySectionProps {
     wallet: string | null;
@@ -167,18 +168,55 @@ export default function QuerySection({ wallet }: QuerySectionProps) {
         setIsQuerying(true);
         setResult(null);
 
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            // Call the backend API
+            const response = await fetch(`${API_BASE_URL}/query/trait`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token_id: 1, // Demo token ID
+                    wallet_address: wallet || '0x0000000000000000000000000000000000000000',
+                    signature: '0x' + '0'.repeat(130), // Demo signature
+                    trait: traitId,
+                }),
+            });
 
-        const queryResult = {
-            ...demoResults[traitId],
-            trait: traitId,
-            timestamp: new Date().toLocaleTimeString(),
-            proof: '0x' + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-        };
+            if (!response.ok) {
+                throw new Error('Failed to query trait');
+            }
 
-        setResult(queryResult);
-        setQueryHistory(prev => [queryResult, ...prev.slice(0, 4)]);
-        setIsQuerying(false);
+            const data = await response.json();
+
+            // Map API response to UI format
+            const traitInfo = availableTraits.find(t => t.id === traitId);
+            const queryResult = {
+                trait: traitId,
+                prediction: data.result?.prediction || 'Unknown',
+                confidence: Math.round((data.result?.confidence || 0.7) * 100),
+                description: data.result?.description || '',
+                emoji: traitInfo?.icon || '🧬',
+                timestamp: new Date().toLocaleTimeString(),
+                proof: data.proof || '0x' + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            };
+
+            setResult(queryResult);
+            setQueryHistory(prev => [queryResult, ...prev.slice(0, 4)]);
+        } catch (error) {
+            console.error('Query error:', error);
+            // Fallback to demo results if API fails
+            const queryResult = {
+                ...demoResults[traitId],
+                trait: traitId,
+                timestamp: new Date().toLocaleTimeString(),
+                proof: '0x' + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            };
+            setResult(queryResult);
+            setQueryHistory(prev => [queryResult, ...prev.slice(0, 4)]);
+        } finally {
+            setIsQuerying(false);
+        }
     };
 
     return (
@@ -220,8 +258,8 @@ export default function QuerySection({ wallet }: QuerySectionProps) {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${selectedCategory === cat
-                                    ? 'bg-purple-500/30 text-white border-2 border-purple-500/50 shadow-lg shadow-purple-500/20'
-                                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white'
+                                ? 'bg-purple-500/30 text-white border-2 border-purple-500/50 shadow-lg shadow-purple-500/20'
+                                : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white'
                                 }`}
                         >
                             {cat}

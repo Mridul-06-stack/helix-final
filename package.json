@@ -11,7 +11,8 @@
     "deploy:mumbai": "hardhat run scripts/deploy.js --network mumbai",
     "verify": "hardhat verify --network polygon",
     "node": "hardhat node",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "backend": "start_backend.bat"
   },
   "keywords": [
     "nft",

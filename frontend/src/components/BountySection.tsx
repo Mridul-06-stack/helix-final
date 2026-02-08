@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import DNAComparisonAnimation from './DNAComparisonAnimation';
 import ResearcherRegistration from './ResearcherRegistration';
 import VerificationDashboard from './VerificationDashboard';
+import { API_BASE_URL } from '@/config/contracts';
 
 interface BountySectionProps {
     wallet: string | null;
@@ -196,6 +197,45 @@ const getCategoryStyle = (category: string) => {
     return styles[category] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
 };
 
+const getCategoryIcon = (category: string): string => {
+    const icons: Record<string, string> = {
+        'Traits': '👁️',
+        'Health': '🥛',
+        'Fitness': '💪',
+        'Disease': '🧬',
+        'Ancestry': '🌍',
+        'Pharma': '💊',
+        'Research': '⭐',
+    };
+    return icons[category] || '🔬';
+};
+
+const getCategoryColor = (category: string): string => {
+    const colors: Record<string, string> = {
+        'Traits': 'from-blue-500/20 to-cyan-500/20',
+        'Health': 'from-green-500/20 to-emerald-500/20',
+        'Fitness': 'from-orange-500/20 to-red-500/20',
+        'Disease': 'from-purple-500/20 to-pink-500/20',
+        'Ancestry': 'from-teal-500/20 to-cyan-500/20',
+        'Pharma': 'from-pink-500/20 to-fuchsia-500/20',
+        'Research': 'from-yellow-500/20 to-orange-500/20',
+    };
+    return colors[category] || 'from-gray-500/20 to-slate-500/20';
+};
+
+const getCategoryBorder = (category: string): string => {
+    const borders: Record<string, string> = {
+        'Traits': 'border-blue-500/30',
+        'Health': 'border-green-500/30',
+        'Fitness': 'border-orange-500/30',
+        'Disease': 'border-purple-500/30',
+        'Ancestry': 'border-teal-500/30',
+        'Pharma': 'border-pink-500/30',
+        'Research': 'border-yellow-500/30',
+    };
+    return borders[category] || 'border-gray-500/30';
+};
+
 export default function BountySection({ wallet }: BountySectionProps) {
     const [bounties, setBounties] = useState<Bounty[]>(demoBounties);
     const [selectedBounty, setSelectedBounty] = useState<Bounty | null>(null);
@@ -230,6 +270,37 @@ export default function BountySection({ wallet }: BountySectionProps) {
 
     const categories = ['all', 'Traits', 'Health', 'Fitness', 'Disease', 'Ancestry', 'Pharma', 'Research'];
 
+    // Fetch bounties from API on mount
+    useEffect(() => {
+        const fetchBounties = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/bounties`);
+                if (response.ok) {
+                    const data = await response.json();
+                    // Map API response to UI format
+                    const apiBounties = data.bounties.map((b: any) => ({
+                        id: b.id,
+                        title: b.title,
+                        description: b.description,
+                        reward: b.reward_per_response,
+                        maxResponses: b.max_responses,
+                        responseCount: b.response_count,
+                        category: b.category,
+                        expiresIn: new Date(b.expires_at).toLocaleDateString(),
+                        icon: getCategoryIcon(b.category),
+                        color: getCategoryColor(b.category),
+                        borderColor: getCategoryBorder(b.category),
+                    }));
+                    // Merge API bounties with demo bounties
+                    setBounties([...apiBounties, ...demoBounties.filter(d => !apiBounties.find((a: Bounty) => a.id === d.id))]);
+                }
+            } catch (error) {
+                console.log('Using demo bounties, API not available:', error);
+            }
+        };
+        fetchBounties();
+    }, []);
+
     const filteredBounties = filter === 'all'
         ? bounties
         : bounties.filter(b => b.category === filter);
@@ -239,21 +310,71 @@ export default function BountySection({ wallet }: BountySectionProps) {
         setIsChecking(true);
         setMatchResult(null);
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Call backend API to check match
+            const response = await fetch(`${API_BASE_URL}/bounties/check-match`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    bounty_id: bounty.id,
+                    token_id: 1, // Demo token ID
+                    wallet_address: wallet || '0x0000000000000000000000000000000000000000',
+                    signature: '0x' + '0'.repeat(130), // Demo signature
+                }),
+            });
 
-        // Randomly determine match for demo
-        const matches = Math.random() > 0.3;
-        setMatchResult(matches);
-        setIsChecking(false);
+            if (response.ok) {
+                const data = await response.json();
+                setMatchResult(data.matches);
+            } else {
+                // Fallback to random for demo
+                setMatchResult(Math.random() > 0.3);
+            }
+        } catch (error) {
+            console.error('Check match error:', error);
+            // Fallback to random for demo
+            setMatchResult(Math.random() > 0.3);
+        } finally {
+            setIsChecking(false);
+        }
     };
 
     const handleRespond = async () => {
         if (!selectedBounty || !matchResult) return;
 
         setIsChecking(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        setEarnings(prev => prev + selectedBounty.reward);
+        try {
+            // Call backend API to respond to bounty
+            const response = await fetch(`${API_BASE_URL}/bounties/respond`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    bounty_id: selectedBounty.id,
+                    token_id: 1, // Demo token ID
+                    wallet_address: wallet || '0x0000000000000000000000000000000000000000',
+                    signature: '0x' + '0'.repeat(130), // Demo signature
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setEarnings(prev => prev + data.reward_amount);
+                }
+            } else {
+                // Fallback for demo
+                setEarnings(prev => prev + selectedBounty.reward);
+            }
+        } catch (error) {
+            console.error('Respond error:', error);
+            // Fallback for demo
+            setEarnings(prev => prev + selectedBounty.reward);
+        }
 
         // Update bounty count
         setBounties(prev => prev.map(b =>
