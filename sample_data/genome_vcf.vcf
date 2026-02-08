@@ -1,0 +1,30 @@
+##fileformat=VCFv4.2
+##fileDate=20260208
+##source=HelixVault_GenData generator
+##reference=GRCh37
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+1	82154	rs4477212	A	.	.	PASS	.	GT	0/0
+1	752566	rs3094315	A	G	.	PASS	.	GT	0/1
+1	752721	rs3131972	G	.	.	PASS	.	GT	0/0
+1	776546	rs12124819	A	.	.	PASS	.	GT	0/0
+1	798959	rs11240777	A	G	.	PASS	.	GT	0/1
+1	800007	rs6681049	C	.	.	PASS	.	GT	0/0
+1	838555	rs4970383	A	C	.	PASS	.	GT	0/1
+1	846808	rs4475691	C	T	.	PASS	.	GT	0/1
+1	854250	rs7537756	A	.	.	PASS	.	GT	0/0
+1	861808	rs13302982	G	.	.	PASS	.	GT	0/0
+1	873558	rs1110052	T	.	.	PASS	.	GT	0/0
+1	882064	rs2272756	A	G	.	PASS	.	GT	0/1
+1	891945	rs13303106	A	.	.	PASS	.	GT	0/0
+1	893981	rs28415373	C	.	.	PASS	.	GT	0/0
+1	905272	rs1235638	A	.	.	PASS	.	GT	0/0
+1	918731	rs2604953	C	T	.	PASS	.	GT	0/1
+1	936573	rs2307872	G	.	.	PASS	.	GT	0/0
+1	948301	rs853400	A	.	.	PASS	.	GT	0/0
+1	995669	rs3934834	C	.	.	PASS	.	GT	0/0
+1	996593	rs6874136	T	.	.	PASS	.	GT	0/0
+1	999120	rs940552	G	.	.	PASS	.	GT	0/0
