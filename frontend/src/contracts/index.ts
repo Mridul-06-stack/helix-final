@@ -1,4 +1,5 @@
 import GeneticNFTABI from './GeneticNFT.abi.json';
+import ResearcherRegistryABI from './ResearcherRegistry.abi.json';
 
 export const CONTRACTS = {
   GeneticNFT: {
@@ -6,8 +7,9 @@ export const CONTRACTS = {
     address: '0x57c9B78a3f088b52e378ce37d740e2A3AEF33B28' as `0x${string}`,
   },
   ResearcherRegistry: {
-    address: '0xd850DA479cB9B0a95F3b5E65edF0cd6d7D841EAd' as `0x${string}`,
+    abi: ResearcherRegistryABI,
+    address: '0x2D8175a94D9EcDba7d73619EcF895814a25E0A12' as `0x${string}`,
   },
 };
 
-export { GeneticNFTABI };
+export { GeneticNFTABI, ResearcherRegistryABI };

@@ -8,9 +8,6 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
     title: 'HelixVault - Genomic Data NFT Platform',
     description: 'Privacy-preserving genomic data monetization through NFTs and AI',
-    icons: {
-        icon: '/favicon.ico',
-    },
 };
 
 export default function RootLayout({

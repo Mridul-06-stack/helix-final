@@ -1,12 +1,12 @@
 // Contract addresses and ABIs
 export const CONTRACTS = {
   RESEARCHER_REGISTRY: {
-    address: '0xd850DA479cB9B0a95F3b5E65edF0cd6d7D841EAd' as `0x${string}`,
+    address: '0x2D8175a94D9EcDba7d73619EcF895814a25E0A12' as `0x${string}`,
     chainId: 11155111, // Sepolia
   },
   // Add other contracts when deployed
   GENETIC_NFT: {
-    address: '' as `0x${string}`,
+    address: '0x2fC5b7ed74E5A0476fb85389f87Aa24bd2Dc3379' as `0x${string}`,
     chainId: 11155111,
   },
 };
