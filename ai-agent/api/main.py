@@ -153,8 +153,7 @@ async def get_config():
     return {
         "contracts": {
             "genetic_nft": settings.contract_address,
-            "bounty_market": settings.bounty_contract_address,
-            "network": "polygon"
+            "network": "sepolia"
         },
         "supported_formats": ["23andme", "ancestry", "vcf"],
         "supported_traits": [
