@@ -1,5 +1,40 @@
+# Dependencies
 node_modules/
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Next.js
 .next/
+out/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+venv/
+.venv/
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
