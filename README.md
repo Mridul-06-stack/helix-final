@@ -19,14 +19,14 @@
 HelixVault is a DeSci (Decentralized Science) platform that allows users to:
 
 1. **Encrypt** their genetic data (23andMe, Ancestry, VCF files)
-2. **Mint** it as an NFT on Polygon blockchain
+2. **Mint** it as an NFT on Ethereum (Sepolia testnet)
 3. **Monetize** by responding to research bounties
 4. **Preserve Privacy** - AI agents answer queries without exposing raw DNA
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   Upload    │ -> │   Encrypt   │ -> │    IPFS     │ -> │   Mint NFT  │
-│  DNA File   │    │  AES-256    │    │   Storage   │    │  (Polygon)  │
+│  DNA File   │    │  AES-256    │    │   Storage   │    │  (Ethereum) │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
                                               │
                                               v
